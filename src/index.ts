@@ -1,6 +1,5 @@
 import "dotenv/config";
 import puppeteer from "puppeteer";
-import config from "../config.json";
 import { scrapeSection } from "./utils/scrape";
 import { writeToCSV } from "./utils/write";
 
@@ -15,10 +14,10 @@ if (!url) throw new Error("TARGET_START_URL is not defined in .env file.");
   const browser = await puppeteer.launch({ headless: true });
 
   // Compile list page.
-  const articles = await scrapeSection(browser, url);
+  const [articles, keys] = await scrapeSection(browser, url);
 
   // Write data to CSV.
-  await writeToCSV(name.replace(" ", "-").toLowerCase(), articles);
+  await writeToCSV(name.replace(" ", "-").toLowerCase(), articles, keys);
 
   // Close browser.
   await browser.close();
