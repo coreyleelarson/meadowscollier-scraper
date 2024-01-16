@@ -7,4 +7,8 @@ if (!url) throw new Error("SOURCE_START_URL is not defined in .env file.");
 const targetDir = process.env.TARGET_DIR;
 if (!targetDir) throw new Error("TARGET_DIR is not defined in .env file.");
 
-export const config = { name, url, targetDir };
+export const config = {
+  name: name.replace(" ", "-").toLowerCase(),
+  url,
+  targetDir,
+};

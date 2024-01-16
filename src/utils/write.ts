@@ -15,6 +15,10 @@ export async function writeToCSV(articles: Article[], keys: string[]) {
   if (!fs.existsSync(targetDir)) await fs.mkdir(targetDir, () => {});
 
   // Write the CSV file.
-  const fileName = config.name.replace(" ", "-").toLowerCase();
-  await fs.writeFile(`out/${fileName}.csv`, data, "utf-8", () => {});
+  await fs.writeFile(
+    `${targetDir}/${config.name}.csv`,
+    data,
+    "utf-8",
+    () => {}
+  );
 }

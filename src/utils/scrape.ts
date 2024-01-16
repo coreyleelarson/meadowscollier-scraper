@@ -109,26 +109,33 @@ export async function scrapeArticle(
       const processed = await articlePage.evaluate(() => {
         const result: Article = {};
 
-        // Get content and format it into paragraphs.
-        const content = document.querySelector(".article-details");
+        //
+        let content =
+          document.querySelector(".article-details")?.innerHTML || "";
 
-        const processedContent = content?.innerHTML
-          ?.replace(/&nbsp;/g, " ")
+        // Process content
+        content = content
+          .replace(/&nbsp;/g, " ")
           .replace(/\n/g, "")
           .replace(/\s+/g, " ")
           .replace(/[\u2018\u2019]/g, "'")
           .replace(/[\u201C\u201D]/g, '"')
           .trim();
-        // .split("<br>")
-        // .filter(Boolean)
-        // .map((part) =>
-        //   !part.startsWith("<") || part.startsWith("<a ")
-        //     ? `<p>${part}</p>`
-        //     : part
-        // )
-        // .join("");
 
-        if (processedContent) result.content = processedContent;
+        // If content is not already formatted into paragraphs, do so.
+        if (content && !content.includes("<p>")) {
+          content = content
+            .split("<br>")
+            .filter(Boolean)
+            .map((part) =>
+              !part.startsWith("<") || part.startsWith("<a ")
+                ? `<p>${part}</p>`
+                : part
+            )
+            .join("");
+        }
+
+        if (content) result.content = content;
 
         // Get article title.
         const title =
@@ -184,7 +191,7 @@ export async function scrapeArticle(
       // Merge processed data with preview data.
       article = { ...article, ...processed };
     } catch (error) {
-      console.error(`failed ${preview.url}`, error.message);
+      // console.error(`failed ${preview.url}`, error.message);
     }
   }
 
