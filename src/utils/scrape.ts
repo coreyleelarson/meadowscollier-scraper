@@ -37,12 +37,11 @@ export async function scrapeSection(
             block.querySelector("p")?.textContent ||
             block.querySelector("h3")?.textContent
           )
-            ?.replace(/\n/g, "")
+            ?.replace(/&nbsp;/g, " ")
+            .replace(/\n/g, "")
             .replace(/\s+/g, " ")
-            .replace("&nbsp;", " ")
             .replace(/[\u2018\u2019]/g, "'")
             .replace(/[\u201C\u201D]/g, '"')
-            .replace(/[\u2122]/g, "™")
             .split(" [ read ]")[0]
             .trim() || "";
 
@@ -96,33 +95,37 @@ export async function scrapeArticle(
     await articlePage.goto(preview.url, { waitUntil: "domcontentloaded" });
     await articlePage.waitForSelector(".article-details");
 
+    let article: Article = { ...preview };
+
+    // Add redirectedUrl if applicable.
+    if (articlePage.url() !== preview.url) {
+      article.redirectedUrl = articlePage.url();
+    }
+
     // Scrape article content.
-    const [article, keys] = await articlePage.evaluate((preview) => {
-      const article: Article = { ...preview };
+    const processed = await articlePage.evaluate(() => {
+      const result: Article = {};
 
       // Get content and format it into paragraphs.
-      const content = document
-        .querySelector(".article-details")
-        ?.innerHTML?.split("<br>")
-        .filter(Boolean)
-        .map(
-          (part) =>
-            part
-              ?.replace(/\n/g, "")
-              .replace(/\s+/g, " ")
-              .replace("&nbsp;", " ")
-              .replace(/[\u2018\u2019]/g, "'")
-              .replace(/[\u201C\u201D]/g, '"')
-              .trim() || ""
-        )
-        .map((part) =>
-          !part.startsWith("<") || part.startsWith("<a ")
-            ? `<p>${part}</p>`
-            : part
-        )
-        .join("");
+      const content = document.querySelector(".article-details");
 
-      if (content) article.content = content;
+      const processedContent = content?.innerHTML
+        ?.replace(/&nbsp;/g, " ")
+        .replace(/\n/g, "")
+        .replace(/\s+/g, " ")
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .trim();
+      // .split("<br>")
+      // .filter(Boolean)
+      // .map((part) =>
+      //   !part.startsWith("<") || part.startsWith("<a ")
+      //     ? `<p>${part}</p>`
+      //     : part
+      // )
+      // .join("");
+
+      if (processedContent) result.content = processedContent;
 
       // Get article title.
       const title =
@@ -132,14 +135,14 @@ export async function scrapeArticle(
             'head > meta[name="og:title"]'
           )?.content
         )
-          ?.replace(/\n/g, "")
+          ?.replace(/&nbsp;/g, " ")
+          .replace(/\n/g, "")
           .replace(/\s+/g, " ")
-          .replace("&nbsp;", " ")
           .replace(/[\u2018\u2019]/g, "'")
           .replace(/[\u201C\u201D]/g, '"')
           .trim() || "";
 
-      if (title) article.title = title;
+      if (title) result.title = title;
 
       // Get article authors.
       const postInfo = document.querySelector(
@@ -152,7 +155,7 @@ export async function scrapeArticle(
           .split(/(?!, \w{2}.), | and /);
 
         names?.forEach((name, index) => {
-          article[`author${index + 1}`] = name;
+          result[`author${index + 1}`] = name;
         });
       }
 
@@ -162,21 +165,24 @@ export async function scrapeArticle(
           ".news-block .related-attorneys .att-info strong"
         )
       ).forEach((attorney, index) => {
-        article[`relatedAttorney${index + 1}`] =
+        result[`relatedAttorney${index + 1}`] =
           attorney.textContent
-            ?.replace(/\n/g, "")
+            ?.replace(/&nbsp;/g, " ")
+            .replace(/\n/g, "")
             .replace(/\s+/g, " ")
-            .replace("&nbsp;", " ")
             .replace(/[\u2018\u2019]/g, "'")
             .replace(/[\u201C\u201D]/g, '"')
             .trim() || "";
       });
 
-      return [article, Object.keys(article)] as const;
-    }, preview);
+      return result;
+    });
+
+    // Merge processed data with preview data.
+    article = { ...article, ...processed };
 
     // Return scraped article
-    return [article, keys];
+    return [article, Object.keys(article)];
   } catch (error) {
     return [preview, Object.keys(preview)];
   }

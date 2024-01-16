@@ -4,6 +4,7 @@ export interface Article {
   summary?: string;
   title?: string;
   url?: string;
+  redirectedUrl?: string;
   [key: `author${number}`]: string;
   [key: `relatedAttorney${number}`]: string;
 }
