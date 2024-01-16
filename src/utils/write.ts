@@ -1,16 +1,20 @@
 import fs from "fs";
 import Papa from "papaparse";
+import { config } from "../config";
 import { Article } from "../types";
 
-export async function writeToCSV(
-  name: string,
-  articles: Article[],
-  keys: string[]
-) {
+export async function writeToCSV(articles: Article[], keys: string[]) {
   const data = Papa.unparse(articles, {
     quotes: true,
     columns: keys,
   });
 
-  await fs.writeFile(`out/${name}.csv`, data, "utf-8", () => {});
+  const targetDir = `${config.targetDir}/${config.name}`;
+
+  // Create the target directory if it doesn't exist.
+  if (!fs.existsSync(targetDir)) await fs.mkdir(targetDir, () => {});
+
+  // Write the CSV file.
+  const fileName = config.name.replace(" ", "-").toLowerCase();
+  await fs.writeFile(`out/${fileName}.csv`, data, "utf-8", () => {});
 }
